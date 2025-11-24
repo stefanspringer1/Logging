@@ -3,6 +3,9 @@ import LoggingInterfaces
 
 /// This is a logger that can be used to "merge" several other loggers,
 /// i.e. all messages are being distributed to all loggers.
+///
+/// The use is limited because all loggers have to
+/// understand the same logging mode.
 public final class MultiLogger<Message: Sendable & CustomStringConvertible,Mode>: Logger {
 
     public typealias Message = Message
