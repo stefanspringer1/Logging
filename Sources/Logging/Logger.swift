@@ -1,26 +1,24 @@
 import Foundation
-
-/// A logger, logging instances of `String`.
-public protocol Logger: Sendable {
-    func log(_ message: String)
-    func close() throws
-}
+import LoggingInterfaces
 
 /// This is a logger that can be used to "merge" several other loggers,
-/// i.e. all logging events are being distributed to all loggers.
-public final class MultiLogger: Logger {
+/// i.e. all messages are being distributed to all loggers.
+public final class MultiLogger<Message: Sendable & CustomStringConvertible,Mode>: Logger {
+
+    public typealias Message = Message
+    public typealias Mode = Mode
     
-    private let _loggers: [Logger]
+    private let _loggers: [any Logger<Message,Mode>]
     
-    public var loggers: [Logger] { _loggers }
+    public var loggers: [any Logger<Message,Mode>] { _loggers }
     
-    public init(_ loggers: Logger?...) {
-        self._loggers = loggers.compactMap{$0}
+    public init(_ loggers: [any Logger<Message,Mode>]) {
+        self._loggers = loggers
     }
     
-    public func log(_ message: String) {
+    public func log(_ message: Message, withMode mode: Mode? = nil) {
         _loggers.forEach { logger in
-            logger.log(message)
+            logger.log(message, withMode: mode)
         }
     }
     
@@ -38,23 +36,32 @@ public final class MultiLogger: Logger {
 ///
 /// In the case of a crash some logging might get lost, so the
 /// use of an additional `ConcurrentCrashLogger` is sensible.
-open class ConcurrentLogger: Logger, @unchecked Sendable {
-
+open class ConcurrentLogger<Message: Sendable & CustomStringConvertible,Mode: Sendable>: Logger, @unchecked Sendable {
+    
+    public typealias Message = Message
+    public typealias Mode = Mode
+    
     internal let group = DispatchGroup()
-    internal let queue = DispatchQueue(label: "AyncLogger", qos: .background)
+    internal let queue = DispatchQueue(label: "ConcurrentLogger", qos: .background)
     
-    public var loggingAction: ((String) -> ())? = nil
-    public var closeAction: (() -> ())? = nil
+    public var loggingAction: (@Sendable (Message,Mode?) -> ())? = nil
+    public var closeAction: (@Sendable () -> ())? = nil
     
-    public init() {}
+    public init(
+        loggingAction: (@Sendable (Message,Mode?) -> ())? = nil,
+        closeAction: (@Sendable () -> ())? = nil
+    ) {
+        self.loggingAction = loggingAction
+        self.closeAction = closeAction
+    }
     
     private var closed = false
     
-    public func log(_ message: String) {
+    public func log(_ message: Message, withMode mode: Mode? = nil) {
         group.enter()
         self.queue.async {
             if !self.closed {
-                self.loggingAction?(message)
+                self.loggingAction?(message, mode)
             }
             self.group.leave()
         }
@@ -65,8 +72,9 @@ open class ConcurrentLogger: Logger, @unchecked Sendable {
         self.queue.sync {
             if !self.closed {
                 self.closeAction?()
-                self.closed = true
+                self.loggingAction = nil
                 self.closeAction = nil
+                self.closed = true
                 self.group.leave()
             }
         }
@@ -79,20 +87,31 @@ open class ConcurrentLogger: Logger, @unchecked Sendable {
 /// is good for an additional "crash logger" which logs the executed steps
 /// savely so in case of a crash one can know where the crashing takes place.
 /// The repective log can be removed when all work is done.
-open class ConcurrentCrashLogger: Logger, @unchecked Sendable {
+open class ConcurrentCrashLogger<Message: Sendable & CustomStringConvertible,Mode: Sendable>: Logger, @unchecked Sendable {
+    
+    public typealias Message = Message
+    public typealias Mode = Mode
     
     private let queue = DispatchQueue(label: "AyncLogger", qos: .background)
     
-    public var loggingAction: ((String) -> ())? = nil
-    public var closeAction: (() -> ())? = nil
+    public var loggingAction: (@Sendable (Message,Mode?) -> ())? = nil
+    public var closeAction: (@Sendable () -> ())? = nil
     
-    public init() {}
+    public init(
+        loggingAction: (@Sendable (Message,Mode?) -> ())? = nil,
+        closeAction: (@Sendable () -> ())? = nil
+    ) {
+        self.loggingAction = loggingAction
+        self.closeAction = closeAction
+    }
     
     private var closed = false
     
-    public func log(_ message: String) {
+    public func log(_ message: Message, withMode mode: Mode? = nil) {
         self.queue.sync {
-            self.loggingAction?(message)
+            if !self.closed {
+                loggingAction?(message, mode)
+            }
         }
     }
     
@@ -100,8 +119,9 @@ open class ConcurrentCrashLogger: Logger, @unchecked Sendable {
         self.queue.sync {
             if !closed {
                 closeAction?()
-                closed = true
                 closeAction = nil
+                loggingAction = nil
+                closed = true
             }
         }
     }

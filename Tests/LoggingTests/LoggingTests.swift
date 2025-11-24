@@ -1,6 +1,20 @@
 import Testing
 @testable import Logging
 
-@Test func example() async throws {
-    // Write your test here and use APIs like `#expect(...)` to check expected conditions.
+@Suite struct LoggingTests {
+    
+    @Test func testCollectingLogger() async throws {
+        
+        enum IndifferentLoggingMode {
+            case indifferent
+        }
+        
+        let logger = CollectingLogger<String, IndifferentLoggingMode>()
+        
+        logger.log("hello", withMode: .indifferent)
+        logger.log("error!")
+        
+        #expect(logger.getMessages() == ["hello", "error!"])
+    }
+    
 }

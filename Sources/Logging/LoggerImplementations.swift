@@ -1,20 +1,24 @@
 import Foundation
+import LoggingInterfaces
 
 /// A logger just collecting all logging messages.
-public class CollectingLogger: ConcurrentLogger, @unchecked Sendable {
+public class CollectingLogger<Message: Sendable & CustomStringConvertible,Mode: Sendable>: ConcurrentLogger<Message,Mode>, @unchecked Sendable {
     
-    private var messages = [String]()
+    public typealias Message = Message
+    public typealias Mode = Mode
     
-    public override init() {
+    private var messages = [Message]()
+    
+    public init(errorsToStandard: Bool = false) {
         super.init()
-        loggingAction = { message in
+        loggingAction = { message,printMode in
             self.messages.append(message)
         }
     }
     
     /// Get all collected message events.
-    public func getMessages() -> [String] {
-        var messages: [String]? = nil
+    public func getMessages() -> [Message] {
+        var messages: [Message]? = nil
         group.enter()
         self.queue.sync {
             messages = self.messages
@@ -24,36 +28,85 @@ public class CollectingLogger: ConcurrentLogger, @unchecked Sendable {
     }
 }
 
+public enum PrintMode: Sendable {
+    case standard
+    case error
+}
+
+func printToErrorOut(_ message: CustomStringConvertible) {
+    FileHandle.standardError.write(Data("\(message)\n".utf8))
+}
+
 /// A logger that just prints to the standard output.
-public final class PrintLogger: ConcurrentLogger, @unchecked Sendable {
+public final class PrintLogger<Message: Sendable & CustomStringConvertible,Mode>: ConcurrentLogger<Message,PrintMode>, @unchecked Sendable {
+    
+    public typealias Message = Message
+    public typealias Mode = PrintMode
     
     public init(errorsToStandard: Bool = false) {
-        super.init()
-        loggingAction = { message in
-            print(message)
-        }
-    }
-    
-}
-
-func printToErrorOut(_ text: String) {
-    FileHandle.standardError.write(Data(text.utf8))
-}
-
-/// A logger that just prints to the error output.
-public class ErrorPrintLogger: ConcurrentLogger, @unchecked Sendable {
-    
-    public init(errorsToStandard: Bool = false) {
-        super.init()
-        loggingAction = { message in
-            printToErrorOut(message)
-        }
+        super.init(
+            loggingAction: { message,printMode in
+                switch printMode {
+                case .standard, nil:
+                    print(message.description)
+                case .error:
+                    printToErrorOut(message.description)
+                }
+            },
+            closeAction: {
+                // -
+            }
+        )
     }
     
 }
 
 /// A logger writing into a file.
-public final class FileLogger: ConcurrentLogger, @unchecked Sendable {
+public final class FileLogger<Message: Sendable & CustomStringConvertible,Mode>: ConcurrentLogger<Message,PrintMode>, @unchecked Sendable {
+    
+    public typealias Message = Message
+    public typealias Mode = Mode
+    
+    public let path: String
+    var writableFile: WritableFile
+    
+    public init(
+        usingFile path: String,
+        append: Bool = false,
+        blocking: Bool = true
+    ) throws {
+        self.path = path
+        self.writableFile = try WritableFile(path: path, append: append, blocking: blocking)
+        super.init()
+        self.loggingAction = { message,mode in
+            do {
+                try self.writableFile.reopen()
+                try self.writableFile.write(message.description)
+                if !self.writableFile.blocking {
+                    try self.writableFile.close()
+                }
+            }
+            catch {
+                printToErrorOut("could not log to \(path)")
+            }
+        }
+        self.closeAction = {
+            do {
+                try self.writableFile.close()
+            }
+            catch {
+                printToErrorOut("could not log to \(path)")
+            }
+        }
+    }
+    
+}
+
+/// A logger writing immediately into a file.
+public final class FileCrashLogger<Message: Sendable & CustomStringConvertible,Mode>: ConcurrentCrashLogger<Message,PrintMode>, @unchecked Sendable {
+    
+    public typealias Message = Message
+    public typealias Mode = Mode
     
     public let path: String
     var writableFile: WritableFile
@@ -66,10 +119,10 @@ public final class FileLogger: ConcurrentLogger, @unchecked Sendable {
         self.path = path
         writableFile = try WritableFile(path: path, append: append, blocking: blocking)
         super.init()
-        loggingAction = { message in
+        self.loggingAction = { message,mode in
             do {
                 try self.writableFile.reopen()
-                try self.writableFile.write(message)
+                try self.writableFile.write(message.description)
                 if !self.writableFile.blocking {
                     try self.writableFile.close()
                 }
@@ -78,7 +131,7 @@ public final class FileLogger: ConcurrentLogger, @unchecked Sendable {
                 printToErrorOut("could not log to \(path)")
             }
         }
-        closeAction = {
+        self.closeAction = {
             do {
                 try self.writableFile.close()
             }
@@ -87,60 +140,5 @@ public final class FileLogger: ConcurrentLogger, @unchecked Sendable {
             }
         }
     }
-}
-
-/// A logger writing immediately into a file.
-public final class FileCrashLogger: ConcurrentCrashLogger, @unchecked Sendable {
     
-    public let path: String
-    var writableFile: WritableFile
-    
-    public init(
-        usingFile path: String,
-        append: Bool = true
-    ) throws {
-        self.path = path
-        writableFile = try WritableFile(path: path, append: append)
-        super.init()
-        loggingAction = { message in
-            do {
-                try self.writableFile.write(message)
-                try self.writableFile.flush()
-            }
-            catch {
-                printToErrorOut("could not log to \(path)")
-            }
-        }
-        closeAction = {
-            do {
-                try self.writableFile.close()
-            }
-            catch {
-                printToErrorOut("could not log to \(path)")
-            }
-        }
-    }
-}
-
-/// A logger that adds a prefix to all message texts
-/// before forwarding it to the contained logger.
-/// The referenced loggers are being closed when the
-/// PrefixedLogger is being closed.
-public final class PrefixedLogger: Logger {
-    
-    let prefix: String
-    let logger: Logger
-    
-    public init(prefix: String, logger: Logger) {
-        self.prefix = prefix
-        self.logger = logger
-    }
-    
-    public func log(_ message: String) {
-        logger.log("\(prefix)\(message)")
-    }
-    
-    public func close() throws {
-        try logger.close()
-    }
 }
