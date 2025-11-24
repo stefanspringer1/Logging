@@ -60,7 +60,7 @@ open class ConcurrentLogger<Message: Sendable & CustomStringConvertible,Mode: Se
     
     private var closed = false
     
-    public func log(_ message: Message, withMode mode: Mode? = nil) {
+    open func log(_ message: Message, withMode mode: Mode? = nil) {
         group.enter()
         self.queue.async {
             if !self.closed {
@@ -70,7 +70,7 @@ open class ConcurrentLogger<Message: Sendable & CustomStringConvertible,Mode: Se
         }
     }
     
-    public func close() throws {
+    open func close() throws {
         group.enter()
         self.queue.sync {
             if !self.closed {
@@ -110,7 +110,7 @@ open class ConcurrentCrashLogger<Message: Sendable & CustomStringConvertible,Mod
     
     private var closed = false
     
-    public func log(_ message: Message, withMode mode: Mode? = nil) {
+    open func log(_ message: Message, withMode mode: Mode? = nil) {
         self.queue.sync {
             if !self.closed {
                 loggingAction?(message, mode)
@@ -118,7 +118,7 @@ open class ConcurrentCrashLogger<Message: Sendable & CustomStringConvertible,Mod
         }
     }
     
-    public func close() {
+    open func close() {
         self.queue.sync {
             if !closed {
                 closeAction?()
