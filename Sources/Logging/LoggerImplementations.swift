@@ -47,23 +47,22 @@ public final class PrintLogger<Message: Sendable & CustomStringConvertible,Mode>
     
     public init(errorsToStandard: Bool = false) {
         self.errorsToStandard = errorsToStandard
-        super.init(
-            loggingAction: { message,printMode in
-                if errorsToStandard {
+        super.init()
+        loggingAction = { message,printMode in
+            if errorsToStandard {
+                print(message.description)
+            } else {
+                switch printMode {
+                case .standard, nil:
                     print(message.description)
-                } else {
-                    switch printMode {
-                    case .standard, nil:
-                        print(message.description)
-                    case .error:
-                        printToErrorOut(message.description)
-                    }
+                case .error:
+                    printToErrorOut(message.description)
                 }
-            },
-            closeAction: {
-                // -
             }
-        )
+        }
+        closeAction = {
+            do { try self.close() } catch {}
+        }
     }
     
 }
