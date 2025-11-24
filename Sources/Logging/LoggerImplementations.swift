@@ -43,14 +43,21 @@ public final class PrintLogger<Message: Sendable & CustomStringConvertible,Mode>
     public typealias Message = Message
     public typealias Mode = PrintMode
     
+    let errorsToStandard: Bool
+    
     public init(errorsToStandard: Bool = false) {
+        self.errorsToStandard = errorsToStandard
         super.init(
             loggingAction: { message,printMode in
-                switch printMode {
-                case .standard, nil:
+                if errorsToStandard {
                     print(message.description)
-                case .error:
-                    printToErrorOut(message.description)
+                } else {
+                    switch printMode {
+                    case .standard, nil:
+                        print(message.description)
+                    case .error:
+                        printToErrorOut(message.description)
+                    }
                 }
             },
             closeAction: {
