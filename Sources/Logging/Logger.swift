@@ -75,16 +75,18 @@ open class ConcurrentLogger<Message: Sendable & CustomStringConvertible,Mode: Se
     }
     
     open func close() throws {
+        group.wait()
         group.enter()
-        self.queue.sync {
+        self.queue.async {
             if !self.closed {
                 self.closeAction?()
                 self.loggingAction = nil
                 self.closeAction = nil
                 self.closed = true
-                self.group.leave()
             }
+            self.group.leave()
         }
+        group.wait()
     }
     
 }

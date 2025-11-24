@@ -60,9 +60,6 @@ public final class PrintLogger<Message: Sendable & CustomStringConvertible,Mode>
                 }
             }
         }
-        closeAction = {
-            do { try self.close() } catch {}
-        }
     }
     
 }
