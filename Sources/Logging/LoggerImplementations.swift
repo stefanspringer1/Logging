@@ -69,7 +69,7 @@ public final class PrintLogger<Message: Sendable & CustomStringConvertible,Mode>
 }
 
 /// A logger writing into a file.
-public final class FileLogger<Message: Sendable & CustomStringConvertible,Mode>: ConcurrentLogger<Message,PrintMode>, @unchecked Sendable {
+public final class FileLogger<Message: Sendable & CustomStringConvertible,Mode: Sendable>: ConcurrentLogger<Message,Mode>, @unchecked Sendable {
     
     public typealias Message = Message
     public typealias Mode = Mode
