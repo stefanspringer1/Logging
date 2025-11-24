@@ -19,6 +19,10 @@ public final class MultiLogger<Message: Sendable & CustomStringConvertible,Mode>
         self._loggers = loggers
     }
     
+    convenience init(_ loggers: any Logger<Message,Mode>...) {
+        self.init(loggers)
+    }
+    
     public func log(_ message: Message, withMode mode: Mode? = nil) {
         _loggers.forEach { logger in
             logger.log(message, withMode: mode)
