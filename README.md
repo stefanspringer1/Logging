@@ -1,6 +1,6 @@
 # Logging
 
-This is a multi-platform logging library.
+This is a small multi-platform logging library.
 
 ---
 
