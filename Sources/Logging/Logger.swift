@@ -19,7 +19,7 @@ public final class MultiLogger<Message: Sendable & CustomStringConvertible,Mode>
         self._loggers = loggers
     }
     
-    convenience init(_ loggers: any Logger<Message,Mode>...) {
+    public convenience init(_ loggers: any Logger<Message,Mode>...) {
         self.init(loggers)
     }
     
