@@ -6,10 +6,10 @@ import PackageDescription
 let package = Package(
     name: "Logging",
     platforms: [
-        .iOS(.v16),
         .macOS(.v15),
-        .tvOS(.v16),
-        .watchOS(.v9),
+        .iOS(.v17),
+        .tvOS(.v17),
+        .watchOS(.v10),
     ],
     products: [
         // Products define the executables and libraries a package produces, making them visible to other packages.
@@ -19,7 +19,7 @@ let package = Package(
         ),
     ],
     dependencies: [
-        .package(url: "https://github.com/stefanspringer1/LoggingInterfaces.git", from: "0.0.3")
+        .package(url: "https://github.com/stefanspringer1/LoggingInterfaces.git", from: "0.0.4")
     ],
     targets: [
         // Targets are the basic building blocks of a package, defining a module or a test suite.
