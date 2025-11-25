@@ -8,6 +8,7 @@ import LoggingInterfaces
 ///
 /// In the case of a crash some logging might get lost, so the
 /// use of an additional `ConcurrentCrashLogger` is sensible.
+@available(*, deprecated, message: "this package is deprecated, use the repository https://github.com/swiftxml/BasicLogging instead and note the version number being reset to 1.0.0")
 open class ConcurrentLogger<Message: Sendable & CustomStringConvertible,Mode: Sendable>: Logger, @unchecked Sendable {
     
     public typealias Message = Message
@@ -63,6 +64,7 @@ open class ConcurrentLogger<Message: Sendable & CustomStringConvertible,Mode: Se
 /// is good for an additional "crash logger" which logs the executed steps
 /// savely so in case of a crash one can know where the crashing takes place.
 /// The repective log can be removed when all work is done.
+@available(*, deprecated, message: "this package is deprecated, use the repository https://github.com/swiftxml/BasicLogging instead and note the version number being reset to 1.0.0")
 open class ConcurrentCrashLogger<Message: Sendable & CustomStringConvertible,Mode: Sendable>: Logger, @unchecked Sendable {
     
     public typealias Message = Message

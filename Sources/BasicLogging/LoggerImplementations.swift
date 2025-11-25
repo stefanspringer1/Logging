@@ -2,6 +2,7 @@ import Foundation
 import LoggingInterfaces
 
 /// A logger just collecting all logging messages.
+@available(*, deprecated, message: "this package is deprecated, use the repository https://github.com/swiftxml/BasicLogging instead and note the version number being reset to 1.0.0")
 public class CollectingLogger<Message: Sendable & CustomStringConvertible,Mode: Sendable>: ConcurrentLogger<Message,Mode>, @unchecked Sendable {
     
     public typealias Message = Message
@@ -33,6 +34,7 @@ func printToErrorOut(_ message: CustomStringConvertible) {
 }
 
 /// A logger that just prints to the standard output.
+@available(*, deprecated, message: "this package is deprecated, use the repository https://github.com/swiftxml/BasicLogging instead and note the version number being reset to 1.0.0")
 public final class PrintLogger<Message: Sendable & CustomStringConvertible,Mode>: ConcurrentLogger<Message,PrintMode>, @unchecked Sendable {
     
     public typealias Message = Message
@@ -60,6 +62,7 @@ public final class PrintLogger<Message: Sendable & CustomStringConvertible,Mode>
 }
 
 /// A logger writing into a file.
+@available(*, deprecated, message: "this package is deprecated, use the repository https://github.com/swiftxml/BasicLogging instead and note the version number being reset to 1.0.0")
 public final class FileLogger<Message: Sendable & CustomStringConvertible,Mode: Sendable>: ConcurrentLogger<Message,Mode>, @unchecked Sendable {
     
     public typealias Message = Message
@@ -101,6 +104,7 @@ public final class FileLogger<Message: Sendable & CustomStringConvertible,Mode: 
 }
 
 /// A logger writing immediately into a file.
+@available(*, deprecated, message: "this package is deprecated, use the repository https://github.com/swiftxml/BasicLogging instead and note the version number being reset to 1.0.0")
 public final class FileCrashLogger<Message: Sendable & CustomStringConvertible,Mode>: ConcurrentCrashLogger<Message,IndifferentLoggingMode>, @unchecked Sendable {
     
     public typealias Message = Message
