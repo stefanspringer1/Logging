@@ -1,41 +1,6 @@
 import Foundation
 import LoggingInterfaces
 
-/// This is a logger that can be used to "merge" several other loggers,
-/// i.e. all messages are being distributed to all loggers.
-///
-/// The use is limited because all loggers have to
-/// understand the same logging mode.
-public final class MultiLogger<Message: Sendable & CustomStringConvertible,Mode>: Logger {
-
-    public typealias Message = Message
-    public typealias Mode = Mode
-    
-    private let _loggers: [any Logger<Message,Mode>]
-    
-    public var loggers: [any Logger<Message,Mode>] { _loggers }
-    
-    public init(_ loggers: [any Logger<Message,Mode>]) {
-        self._loggers = loggers
-    }
-    
-    public convenience init(_ loggers: any Logger<Message,Mode>...) {
-        self.init(loggers)
-    }
-    
-    public func log(_ message: Message, withMode mode: Mode? = nil) {
-        _loggers.forEach { logger in
-            logger.log(message, withMode: mode)
-        }
-    }
-    
-    public func close() throws {
-        try _loggers.forEach { logger in
-            try logger.close()
-        }
-    }
-}
-
 /// A concurrent wraper around some logging action.
 /// The logging is done asynchronously, so the close() method
 /// is to be called at the end of a process in order to be sure
@@ -49,17 +14,19 @@ open class ConcurrentLogger<Message: Sendable & CustomStringConvertible,Mode: Se
     public typealias Mode = Mode
     
     internal let group = DispatchGroup()
-    internal let queue = DispatchQueue(label: "ConcurrentLogger", qos: .background)
+    internal let queue: DispatchQueue
     
     public var loggingAction: (@Sendable (Message,Mode?) -> ())? = nil
     public var closeAction: (@Sendable () -> ())? = nil
     
     public init(
         loggingAction: (@Sendable (Message,Mode?) -> ())? = nil,
-        closeAction: (@Sendable () -> ())? = nil
+        closeAction: (@Sendable () -> ())? = nil,
+        qualityOfService: DispatchQoS = .userInitiated
     ) {
         self.loggingAction = loggingAction
         self.closeAction = closeAction
+        queue = DispatchQueue(label: "ConcurrentLogger", qos: qualityOfService)
     }
     
     private var closed = false
@@ -101,17 +68,19 @@ open class ConcurrentCrashLogger<Message: Sendable & CustomStringConvertible,Mod
     public typealias Message = Message
     public typealias Mode = Mode
     
-    private let queue = DispatchQueue(label: "AyncLogger", qos: .background)
+    private let queue: DispatchQueue
     
     public var loggingAction: (@Sendable (Message,Mode?) -> ())? = nil
     public var closeAction: (@Sendable () -> ())? = nil
     
     public init(
         loggingAction: (@Sendable (Message,Mode?) -> ())? = nil,
-        closeAction: (@Sendable () -> ())? = nil
+        closeAction: (@Sendable () -> ())? = nil,
+        qualityOfService: DispatchQoS = .userInitiated
     ) {
         self.loggingAction = loggingAction
         self.closeAction = closeAction
+        queue = DispatchQueue(label: "AyncLogger", qos: qualityOfService)
     }
     
     private var closed = false

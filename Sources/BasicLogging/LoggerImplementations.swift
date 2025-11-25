@@ -28,11 +28,6 @@ public class CollectingLogger<Message: Sendable & CustomStringConvertible,Mode: 
     }
 }
 
-public enum PrintMode: Sendable {
-    case standard
-    case error
-}
-
 func printToErrorOut(_ message: CustomStringConvertible) {
     FileHandle.standardError.write(Data("\(message)\n".utf8))
 }
@@ -106,7 +101,7 @@ public final class FileLogger<Message: Sendable & CustomStringConvertible,Mode: 
 }
 
 /// A logger writing immediately into a file.
-public final class FileCrashLogger<Message: Sendable & CustomStringConvertible,Mode>: ConcurrentCrashLogger<Message,PrintMode>, @unchecked Sendable {
+public final class FileCrashLogger<Message: Sendable & CustomStringConvertible,Mode>: ConcurrentCrashLogger<Message,IndifferentLoggingMode>, @unchecked Sendable {
     
     public typealias Message = Message
     public typealias Mode = Mode
