@@ -1,5 +1,5 @@
 import Testing
-@testable import Logging
+import BasicLogging
 
 @Suite struct LoggingTests {
     
